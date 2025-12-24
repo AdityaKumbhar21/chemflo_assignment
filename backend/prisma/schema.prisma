@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Category model for filtering products
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  color       String    @default("#6366f1") // For UI display
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+}
+
+// Chemical Product model
+model Product {
+  id              String           @id @default(uuid())
+  name            String
+  casNumber       String           @unique // Chemical Abstracts Service number
+  unit            Unit             @default(KG)
+  description     String?
+  categoryId      String?
+  category        Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  lowStockThreshold Int            @default(10)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  inventory       Inventory?
+  stockMovements  StockMovement[]
+
+  @@index([casNumber])
+  @@index([categoryId])
+}
+
+// Unit of measurement enum
+enum Unit {
+  KG
+  MT
+  LITRE
+}
+
+// Inventory model - tracks current stock for each product
+model Inventory {
+  id              String   @id @default(uuid())
+  productId       String   @unique
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  currentStock    Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([productId])
+}
+
+// Stock movement history (IN/OUT)
+model StockMovement {
+  id          String       @id @default(uuid())
+  productId   String
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        MovementType
+  quantity    Float
+  notes       String?
+  createdAt   DateTime     @default(now())
+
+  @@index([productId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+// Movement type enum
+enum MovementType {
+  IN
+  OUT
+}
+
+// User model for authentication (admin only)
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
