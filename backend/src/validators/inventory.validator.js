@@ -24,27 +24,42 @@ const inventoryValidators = {
 
   getMovements: [
     query('productId')
-      .optional()
-      .isUUID()
+      .optional({ nullable: true })
+      .custom((value) => {
+        if (!value || value === '' || value === null) return true;
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        return uuidRegex.test(value);
+      })
       .withMessage('Invalid product ID'),
     query('type')
-      .optional()
-      .isIn(['IN', 'OUT'])
+      .optional({ nullable: true })
+      .custom((value) => {
+        if (!value || value === '') return true;
+        return ['IN', 'OUT'].includes(value);
+      })
       .withMessage('Type must be either IN or OUT'),
     query('startDate')
-      .optional()
-      .isISO8601()
+      .optional({ nullable: true })
+      .custom((value) => {
+        if (!value || value === '') return true;
+        return !isNaN(Date.parse(value));
+      })
       .withMessage('Invalid start date format'),
     query('endDate')
-      .optional()
-      .isISO8601()
+      .optional({ nullable: true })
+      .custom((value) => {
+        if (!value || value === '') return true;
+        return !isNaN(Date.parse(value));
+      })
       .withMessage('Invalid end date format'),
     query('page')
       .optional()
+      .toInt()
       .isInt({ min: 1 })
       .withMessage('Page must be a positive integer'),
     query('limit')
       .optional()
+      .toInt()
       .isInt({ min: 1, max: 100 })
       .withMessage('Limit must be between 1 and 100'),
   ],
